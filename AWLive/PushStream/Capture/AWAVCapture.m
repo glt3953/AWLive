@@ -90,11 +90,16 @@ extern void aw_rtmp_state_changed_cb_in_oc(aw_rtmp_state old_state, aw_rtmp_stat
 
 //修改fps
 -(void) updateFps:(NSInteger) fps{
+    //获取当前capture设备
     NSArray *videoDevices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
     
+    //遍历所有设备（前后摄像头）
     for (AVCaptureDevice *vDevice in videoDevices) {
+        //获取当前支持的最大fps
         float maxRate = [(AVFrameRateRange *)[vDevice.activeFormat.videoSupportedFrameRateRanges objectAtIndex:0] maxFrameRate];
+        //如果想要设置的fps小于或等于最大fps，就进行修改
         if (maxRate >= fps) {
+            //实际修改fps的代码
             if ([vDevice lockForConfiguration:NULL]) {
                 vDevice.activeVideoMinFrameDuration = CMTimeMake(10, (int)(fps * 10));
                 vDevice.activeVideoMaxFrameDuration = vDevice.activeVideoMinFrameDuration;

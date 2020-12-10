@@ -625,6 +625,7 @@
 				TargetAttributes = {
 					A4269D561DCE2A1B0010A4EB = {
 						CreatedOnToolsVersion = 8.1;
+						DevelopmentTeam = CCQP63X7K4;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -634,6 +635,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 				Base,
 			);
@@ -849,7 +851,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = CCQP63X7K4;
 				ENABLE_BITCODE = NO;
 				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/clibs/3th-party/libyuv/include";
 				INFOPLIST_FILE = AWLive/Info.plist;
@@ -862,7 +864,7 @@
 					"$(PROJECT_DIR)/clibs/3th-party/libx264/lib",
 					"$(PROJECT_DIR)/clibs/3th-party/libyuv/lib",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.AWLive;
+				PRODUCT_BUNDLE_IDENTIFIER = com.AWLiveDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -873,7 +875,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = CCQP63X7K4;
 				ENABLE_BITCODE = NO;
 				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/clibs/3th-party/libyuv/include";
 				INFOPLIST_FILE = AWLive/Info.plist;
@@ -886,7 +888,7 @@
 					"$(PROJECT_DIR)/clibs/3th-party/libx264/lib",
 					"$(PROJECT_DIR)/clibs/3th-party/libyuv/lib",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.AWLive;
+				PRODUCT_BUNDLE_IDENTIFIER = com.AWLiveDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

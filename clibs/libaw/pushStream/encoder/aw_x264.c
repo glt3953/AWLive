@@ -63,6 +63,7 @@ static void aw_open_x264_handler(aw_x264_context *aw_ctx, x264_param_t *x264_par
 
 //保存本次编码的数据
 static void aw_x264_save_encoded_data(aw_x264_context *ctx){
+    //将编码后的数据转存到encoded_h264_data中，这里面存储的就是编码好的h264视频帧了。
     reset_aw_data(&ctx->encoded_h264_data);
     if (ctx->nal_count > 0) {
         int i = 0;
@@ -117,6 +118,7 @@ static void aw_encode_x264_header(aw_x264_context *aw_ctx){
 //编码一帧数据
 extern void aw_encode_yuv_frame_2_x264(aw_x264_context *aw_ctx, int8_t *yuv_frame, int len){
     if (len > 0 && yuv_frame) {
+        //将视频数据填充到pic_in中，pic_in上面已经介绍过，x264需要这样处理。
         int actual_width = aw_stride(aw_ctx->config.width);
         //数据保存到pic_in中
         if (aw_ctx->config.input_data_format == X264_CSP_NV12) {
@@ -131,7 +133,7 @@ extern void aw_encode_yuv_frame_2_x264(aw_x264_context *aw_ctx, int8_t *yuv_fram
             aw_ctx->pic_in->img.plane[1] = (uint8_t *)yuv_frame + actual_width * aw_ctx->config.height;
             aw_ctx->pic_in->img.plane[2] = (uint8_t *)yuv_frame + actual_width * aw_ctx->config.height * 5 / 4;
         }
-        //编码
+        //x264编码，编码后的数据存储在aw_ctx->nal中
         x264_encoder_encode(aw_ctx->x264_handler, &aw_ctx->nal, &aw_ctx->nal_count, aw_ctx->pic_in, aw_ctx->pic_out);
         aw_ctx->pic_in->i_pts++;
         
@@ -160,10 +162,15 @@ extern void free_aw_x264_config(aw_x264_config **config_p){
     }
 }
 
+/*
+    config 表示配置数据
+    aw_x264_context 是自定义结构体，用于存储x264编码重要属性及过程变量。
+*/
 extern aw_x264_context *alloc_aw_x264_context(aw_x264_config config){
     aw_x264_context *ctx = aw_alloc(sizeof(aw_x264_context));
     memset(ctx, 0, sizeof(aw_x264_context));
     
+    //数据默认为 I420
     if (!config.input_data_format) {
         config.input_data_format = X264_CSP_I420;
     }
@@ -171,37 +178,52 @@ extern aw_x264_context *alloc_aw_x264_context(aw_x264_config config){
     //创建handler do nothing
     memcpy(&ctx->config, &config, sizeof(aw_x264_config));
     x264_param_t *x264_param = NULL;
+    //x264参数，具体请参考：http://blog.csdn.net/table/article/details/8085115
     aw_create_x264_param(ctx, &x264_param);
+    //开启编码器
     aw_open_x264_handler(ctx, x264_param);
     aw_free(x264_param);
     
-    //创建pic_in
+    //创建pic_in，x264内部用于存储输入图像数据的一段空间。
     x264_picture_t *pic_in = aw_alloc(sizeof(x264_picture_t));
     x264_picture_init(pic_in);
     
+    //[注意有坑]
+    //aw_stride是一个宏，用于将视频宽度转成16的倍数。如果不是16的倍数，有时候会编码失败（颜色缺失等）。
     int alloc_width = aw_stride(config.width);
     
     x264_picture_alloc(pic_in, config.input_data_format, alloc_width, config.height);
     
     pic_in->img.i_csp = config.input_data_format;
     
+    //i_stride 表示换行步长，跟plane数及格式有关，x264内部用来判定读取多少数据需要换行。
+    //关于yuv数据格式在第二章里面介绍过，这里再次回顾一下。
     if (config.input_data_format == X264_CSP_NV12) {
+        //nv12数据包含2个plane，第一个plane存储了y数据大小为 width * height，
+        //第二个plane存储uv数据，u和v隔位存储，数据大小为：width * (height / 2)
         pic_in->img.i_stride[0] = alloc_width;
         pic_in->img.i_stride[1] = alloc_width;
         pic_in->img.i_plane = 2;
     }else if(config.input_data_format == X264_CSP_BGR || config.input_data_format == X264_CSP_RGB){
+        //rgb数据包含一个plane，数据长度为 width * 3 * height。
         pic_in->img.i_stride[0] = alloc_width * 3;
         pic_in->img.i_plane = 1;
     }else if(config.input_data_format == X264_CSP_BGRA){
+        //bgra同rgb类似
         pic_in->img.i_stride[0] = alloc_width * 4;
         pic_in->img.i_plane = 1;
-    }else{//YUV420
+    }else{
+        //yuv420即I420格式。
+        //包含3个plane，第一个plane存储y数据大小为width * height
+        //第二个存储u数据，数据大小为 width * height / 4
+        //第三个存储v数据，数据大小为 width * height / 4
         pic_in->img.i_stride[0] = alloc_width;
         pic_in->img.i_stride[1] = alloc_width / 2;
         pic_in->img.i_stride[2] = alloc_width / 2;
         pic_in->img.i_plane = 3;
     }
     
+    //其他数据初始化，pic_in 用于存储输入数据(yuv/rgb等数据)，pic_out用于存储输出数据(h264数据)
     ctx->pic_in = pic_in;
     
     ctx->pic_out = aw_alloc(sizeof(x264_picture_t));
@@ -212,11 +234,16 @@ extern aw_x264_context *alloc_aw_x264_context(aw_x264_config config){
     ctx->sps_pps_data = alloc_aw_data(0);
     
     //获取sps pps
+    // sps pps 数据是rtmp协议要求的必需在所有flv视频帧之前发送的一帧数据，存储了h264视频的一些关键属性。
+    // 具体获取方法请看demo，很简单，这里就不解释了。
     aw_encode_x264_header(ctx);
     
     return ctx;
 }
 
+/*
+    很简单，分别释放pic_in，pic_out，x264_handler即可
+*/
 extern void free_aw_x264_context(aw_x264_context **ctx_p){
     aw_x264_context *ctx = *ctx_p;
     if (ctx) {
@@ -227,6 +254,7 @@ extern void free_aw_x264_context(aw_x264_context **ctx_p){
             ctx->pic_in = NULL;
         }
         
+        //释放pic_out
         if (ctx->pic_out) {
             x264_picture_clean(ctx->pic_out);
             aw_free(ctx->pic_out);

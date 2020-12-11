@@ -41,18 +41,24 @@ static aw_flv_audio_tag *aw_sw_encoder_create_flv_audio_tag(aw_faac_config *faac
 }
 
 //编码器开关
+/*
+    faac_config：需要由上层传入相关配置属性
+*/
 extern void aw_sw_encoder_open_faac_encoder(aw_faac_config *faac_config){
+    //是否已经开启了，避免重复开启
     if (aw_sw_faac_encoder_is_valid()) {
         aw_log("[E] aw_sw_encoder_open_faac_encoder when encoder is already inited");
         return;
     }
     
+    //创建配置
     int32_t faac_cfg_len = sizeof(aw_faac_config);
     if (!s_faac_config) {
         s_faac_config = aw_alloc(faac_cfg_len);
     }
     memcpy(s_faac_config, faac_config, faac_cfg_len);
     
+    //开启faac软编码
     s_faac_ctx = alloc_aw_faac_context(*faac_config);
 }
 
@@ -63,6 +69,7 @@ extern void aw_sw_encoder_close_faac_encoder(){
         return;
     }
     
+    //是否aw_faac_context，也就关闭了faac编码环境。
     free_aw_faac_context(&s_faac_ctx);
     
     if (s_faac_config) {
@@ -72,14 +79,22 @@ extern void aw_sw_encoder_close_faac_encoder(){
 }
 
 //对pcm数据进行faac软编码，并转成flv_audio_tag
+/*
+    pcm_data: 传入的pcm数据
+    len: pcm数据长度
+    timestamp：flv时间戳，rtmp协议要求发送的flv音视频帧的时间戳需为均匀增加，不允许 后发送的数据时间戳 比 先发送的数据的时间戳 还要小。
+    aw_flv_audio_tag: 返回类型，生成的flv音频数据（flv中，每帧数据称为一个tag）。
+*/
 extern aw_flv_audio_tag *aw_sw_encoder_encode_faac_data(int8_t *pcm_data, long len, uint32_t timestamp){
     if (!aw_sw_faac_encoder_is_valid()) {
         aw_log("[E] aw_sw_encoder_encode_faac_data when encoder is not inited");
         return NULL;
     }
     
+    //将pcm数据编码成aac数据
     aw_encode_pcm_frame_2_aac(s_faac_ctx, pcm_data, len);
     
+    // 使用faac编码的数据会带有7个字节的adts头。rtmp不接受此值，在此去掉前7个字节。
     int adts_header_size = 7;
     
     //除去ADTS头的7字节
@@ -87,7 +102,7 @@ extern aw_flv_audio_tag *aw_sw_encoder_encode_faac_data(int8_t *pcm_data, long l
         return NULL;
     }
     
-    //除去ADTS头的7字节
+    //将aac数据封装成flv音频帧。flv帧仅仅是将aac数据增加一些固定信息。并没有对aac数据进行编码操作。
     aw_flv_audio_tag *audio_tag = aw_encoder_create_audio_tag((int8_t *)s_faac_ctx->encoded_aac_data->data + adts_header_size, s_faac_ctx->encoded_aac_data->size - adts_header_size, timestamp, &s_faac_ctx->config);
     
     audio_count++;
@@ -95,8 +110,9 @@ extern aw_flv_audio_tag *aw_sw_encoder_encode_faac_data(int8_t *pcm_data, long l
     return audio_tag;
 }
 
-//根据faac_config 创建包含audio specific config 的flv tag
+//根据faac_config 创建包含audio specific config 的flv tag，将audio specific config data 转成flv帧数据。
 extern aw_flv_audio_tag *aw_sw_encoder_create_faac_specific_config_tag(){
+    //是否已打开编码器
     if(!aw_sw_faac_encoder_is_valid()){
         aw_log("[E] aw_sw_encoder_create_faac_specific_config_tag when audio encoder is not inited");
         return NULL;
@@ -104,6 +120,8 @@ extern aw_flv_audio_tag *aw_sw_encoder_create_faac_specific_config_tag(){
     
     //创建 audio specfic config record
     aw_flv_audio_tag *aac_tag = aw_sw_encoder_create_flv_audio_tag(&s_faac_ctx->config);
+    //根据flv协议：audio specific data对应的 aac_packet_type 固定为 aw_flv_a_aac_package_type_aac_sequence_header 值为0
+    //普通的音频帧，此处值为1.
     aac_tag->aac_packet_type = aw_flv_a_aac_package_type_aac_sequence_header;
     
     aac_tag->config_record_data = copy_aw_data(s_faac_ctx->audio_specific_config_data);

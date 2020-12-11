@@ -23,17 +23,21 @@ static aw_flv_video_tag *aw_sw_encoder_create_flv_video_tag(){
 
 //将采集到的video yuv数据，编码为flv video tag
 extern aw_flv_video_tag * aw_sw_encoder_encode_x264_data(int8_t *yuv_data, long len, uint32_t timeStamp){
+    //是否已开启编码
     if (!aw_sw_x264_encoder_is_valid()) {
         aw_log("[E] aw_sw_encoder_encode_video_data when video encoder is not inited");
         return NULL;
     }
     
+    //执行编码
     aw_encode_yuv_frame_2_x264(s_x264_ctx, yuv_data, (int32_t)len);
     
+    //编码后是否能取到数据
     if (s_x264_ctx->encoded_h264_data->size <= 0) {
         return NULL;
     }
     
+    //将h264数据转成flv tag
     x264_picture_t *pic_out = s_x264_ctx->pic_out;
     
     aw_flv_video_tag *video_tag = aw_encoder_create_video_tag((int8_t *)s_x264_ctx->encoded_h264_data->data, s_x264_ctx->encoded_h264_data->size, timeStamp, (uint32_t)((pic_out->i_pts - pic_out->i_dts) * 1000.0 / 90000), pic_out->b_keyframe);
@@ -45,7 +49,7 @@ extern aw_flv_video_tag * aw_sw_encoder_encode_x264_data(int8_t *yuv_data, long 
     return video_tag;
 }
 
-//根据flv/h264/aac协议创建video/audio首帧tag
+//根据flv/h264/aac协议创建video/audio首帧tag，flv 格式相关代码在 aw_encode_flv.h/aw_encode_flv.c 中
 extern aw_flv_video_tag *aw_sw_encoder_create_x264_sps_pps_tag(){
     if(!aw_sw_x264_encoder_is_valid()){
         aw_log("[E] aw_sw_encoder_create_video_sps_pps_tag when video encoder is not inited");
@@ -53,17 +57,24 @@ extern aw_flv_video_tag *aw_sw_encoder_create_x264_sps_pps_tag(){
     }
     
     //创建 sps pps
+    // 创建flv视频tag
     aw_flv_video_tag *sps_pps_tag = aw_sw_encoder_create_flv_video_tag();
+    // 关键帧
     sps_pps_tag->frame_type = aw_flv_v_frame_type_key;
+    // package type 为header，固定
     sps_pps_tag->h264_package_type = aw_flv_v_h264_packet_type_seq_header;
+    // cts，项目内所有视频帧的cts 都为0
     sps_pps_tag->h264_composition_time = 0;
+    // 将aw_x264中生成的sps/pps数据copy到tag中
     sps_pps_tag->config_record_data = copy_aw_data(s_x264_ctx->sps_pps_data);
+    // 时间戳为0
     sps_pps_tag->common_tag.timestamp = 0;
+    // flv tag长度为：header size + data header(11字节) + 数据长度（后续介绍）
     sps_pps_tag->common_tag.data_size = s_x264_ctx->sps_pps_data->size + 11 + sps_pps_tag->common_tag.header_size;
     return sps_pps_tag;
 }
 
-//打开编码器
+//打开编码器，就是在aw_x264基础上，封了一层。
 extern void aw_sw_encoder_open_x264_encoder(aw_x264_config *x264_config){
     if (aw_sw_x264_encoder_is_valid()) {
         aw_log("[E] aw_sw_encoder_open_video_encoder when video encoder is not inited");
@@ -81,16 +92,19 @@ extern void aw_sw_encoder_open_x264_encoder(aw_x264_config *x264_config){
 
 //关闭编码器
 extern void aw_sw_encoder_close_x264_encoder(){
+    //避免重复关闭
     if (!aw_sw_x264_encoder_is_valid()) {
         aw_log("[E] aw_sw_encoder_close_video_encoder s_faac_ctx is NULL");
         return;
     }
     
+    //释放配置
     if (s_x264_config) {
         aw_free(s_x264_config);
         s_x264_config = NULL;
     }
     
+    //释放context
     free_aw_x264_context(&s_x264_ctx);
 }
 

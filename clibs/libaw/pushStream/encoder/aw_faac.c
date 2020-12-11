@@ -9,10 +9,19 @@
 #include "string.h"
 #include "aw_utils.h"
 
+/**
+    aw_faac_context 是自己创建的结构体，用于辅助aac编码，存储了faac库的必需的数据，及一些过程变量。
+    它的创建及关闭请看demo中的代码，很简单，这里不需要解释。
+    函数内具体参数配置，请参考：http://wenku.baidu.com/link?url=0E9GnSo7hZ-3WmB_eXz8EfnG8NqJJJtvjrVNW7hW-VEYWW-gYBMVM-CnFSicDE-veDl2tzfL-nu2FQ8msGcCOALuT8VW1l_NjQL9Gvw5V6_
+*/
 static void aw_open_faac_enc_handler(aw_faac_context *faac_ctx){
     //开启faac
+    // 参数依次为：
+    // 输入 采样率(44100) 声道数(2)
+    // 得到 最大输入样本数(1024) 最大输出字节数(2048)
     faac_ctx->faac_handler = faacEncOpen(faac_ctx->config.sample_rate, faac_ctx->config.channel_count, &faac_ctx->max_input_sample_count, &faac_ctx->max_output_byte_count);
     
+    //根据最大输入样本数得到最大输入字节数
     faac_ctx->max_input_byte_count = faac_ctx->max_input_sample_count * faac_ctx->config.sample_size / 8;
     
     if(!faac_ctx->faac_handler){
@@ -35,21 +44,24 @@ static void aw_open_faac_enc_handler(aw_faac_context *faac_ctx){
         faac_config->inputFormat = FAAC_INPUT_FLOAT;
     }
     
-    faac_config->aacObjectType = LOW;
-    faac_config->mpegVersion = MPEG4;
-    faac_config->useTns = 1;
-    faac_config->allowMidside = 0;
+    faac_config->aacObjectType = LOW;//aac对象类型: LOW Main LTP
+    faac_config->mpegVersion = MPEG4;//mpeg版本: MPEG2 MPEG4
+    faac_config->useTns = 1;//抗噪
+    faac_config->allowMidside = 0;// 是否使用mid/side编码
     if(faac_ctx->config.bitrate){
+        //每秒钟每个通道的bitrate
         faac_config->bitRate = faac_ctx->config.bitrate / faac_ctx->config.channel_count;
     }
     
     faacEncSetConfiguration(faac_ctx->faac_handler, faac_config);
     
-    //获取audio specific data
+    //获取audio specific config，本系列文章中第六篇里面介绍了这个数据，它存储了aac格式的一些关键数据，
+    //在rtmp协议中，必须将此数据在所有音频帧之前发送
     uint8_t *audio_specific_data = NULL;
     unsigned long audio_specific_data_len = 0;
     faacEncGetDecoderSpecificInfo(faac_ctx->faac_handler, &audio_specific_data, &audio_specific_data_len);
     
+    //将获取的audio specific config data 存储到faac_ctx中
     if (audio_specific_data_len > 0) {
         faac_ctx->audio_specific_config_data = alloc_aw_data(0);
         memcpy_aw_data(&faac_ctx->audio_specific_config_data, audio_specific_data, (uint32_t)audio_specific_data_len);
@@ -57,7 +69,12 @@ static void aw_open_faac_enc_handler(aw_faac_context *faac_ctx){
     
 }
 
+/**
+    pcm_data 为 pcm格式的音频数据
+    len 表示数据字节数
+*/
 extern void aw_encode_pcm_frame_2_aac(aw_faac_context *ctx, int8_t *pcm_data, long len){
+    //清空encoded_aac_data，每次编码数据最终会存储到此字段中，所以首先清空。
     reset_aw_data(&ctx->encoded_aac_data);
     
     if (!pcm_data || len <= 0) {
@@ -66,6 +83,12 @@ extern void aw_encode_pcm_frame_2_aac(aw_faac_context *ctx, int8_t *pcm_data, lo
     }
     //    aw_log("[d] faacEncEncode one frame begin");
     
+    /**
+            下列代码根据第一步"开启编码环境"函数中计算的最大输入字节数
+            将pcm_data分割成合适的大小，使用faacEncEncode函数将pcm数据编码成aac数据。
+
+            下列代码执行完成后，编码出的aac数据将会存储到encoded_aac_data字段中。
+        */
     long max_input_count = ctx->max_input_byte_count;
     long curr_read_count = 0;
     

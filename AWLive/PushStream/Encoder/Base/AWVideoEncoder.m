@@ -79,7 +79,7 @@
 -(NSData *) convertVideoSmapleBufferToYuvData:(CMSampleBufferRef) videoSample{
     // 获取yuv数据
     // 通过CMSampleBufferGetImageBuffer方法，获得CVImageBufferRef。
-    // 这里面就包含了yuv420数据的指针
+    // 这里面就包含了yuv420(NV12)数据的指针
     CVImageBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(videoSample);
     
     //表示开始操作数据

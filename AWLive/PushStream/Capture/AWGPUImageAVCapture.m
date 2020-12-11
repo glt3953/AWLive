@@ -43,7 +43,7 @@
     
     // GPUImage获取到的数据是BGRA格式。
     // 而各种编码器最适合编码的格式还是yuv（NV12格式）。
-    // 所以在此将BGRA格式的视频数据转成yuv格式。(后面会介绍yuv和pcm格式)
+    // 所以在此将BGRA格式的视频数据转成yuv格式（yuv3种数据可分别传输），yuv中，y表示亮度，单独只有y数据就可以形成一张图片，只不过这张图片是灰色的。u和v表示色差(u和v也被称为：Cb－蓝色差，Cr－红色差)。(后面会介绍yuv和pcm格式)
     // 将bgra转为yuv
     //图像宽度
     int width = aw_stride((int)imageSize.width);
@@ -51,7 +51,7 @@
     int height = imageSize.height;
     //宽*高
     int w_x_h = width * height;
-    //1帧yuv数据长度 = (宽 * 高) * 3 / 2
+    //1帧yuv数据长度 = (宽 * 高) * 3 / 2，1帧RGB数据长度 = (宽 * 高) * 3
     int yuv_len = w_x_h * 3 / 2;
     
     //yuv数据

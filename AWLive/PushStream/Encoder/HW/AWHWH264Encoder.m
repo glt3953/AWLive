@@ -224,6 +224,7 @@ static void vtCompressionSessionCallback (void * CM_NULLABLE outputCallbackRefCo
     }
 }
 
+//关闭释放资源
 -(void)close{
     dispatch_semaphore_signal(self.vSemaphore);
     

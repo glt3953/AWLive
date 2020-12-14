@@ -30,8 +30,11 @@ extern const char *aw_rtmp_state_description(aw_rtmp_state rtmp_state);
 
 typedef void (*aw_rtmp_state_changed_cb) (aw_rtmp_state old_state, aw_rtmp_state new_state);
 
+//aw_rtmp_context是一个context，用于存储一些外部传入及内部共享的变量。
+//写成context统一管理，否则就要写很多全局变量了。
 typedef struct aw_rtmp_context{
     char rtmp_url[256];
+    //librtmp 中的结构体，作为RTMP连接上下文
     RTMP *rtmp;
     
     //写入错误断线重连
@@ -51,6 +54,7 @@ typedef struct aw_rtmp_context{
     //总时间
     double total_duration;
     
+    //外部状态检测
     //状态变化回调，注意，不要在状态回调中做释放aw_rtmp_context的操作。
     //如果非要释放，请延迟一帧。
     aw_rtmp_state_changed_cb state_changed_cb;

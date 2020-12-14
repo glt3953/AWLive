@@ -69,6 +69,7 @@ static OSStatus aacEncodeInputDataProc(AudioConverterRef inAudioConverter, UInt3
  在rtmp中，必须将此帧在所有音频帧之前发送。
  */
 -(aw_flv_audio_tag *)createAudioSpecificConfigFlvTag{
+    //AudioSpecificConfig中包含3种元素：profile，sampleRate，channelCount，结构是：profile(5bit)-sampleRate(4bit)-channelCount(4bit)-空(3bit)
     //profile，表示使用的协议
     uint8_t profile = kMPEG4Object_AAC_LC;
     //采样率
@@ -79,7 +80,7 @@ static OSStatus aacEncodeInputDataProc(AudioConverterRef inAudioConverter, UInt3
     uint8_t config1 = (profile << 3) | ((sampleRate & 0xe) >> 1);
     uint8_t config2 = ((sampleRate & 0x1) << 7) | (chanCfg << 3);
     
-    //将数据转成aw_data
+    //将数据转成aw_data，写入config_data中
     aw_data *config_data = NULL;
     data_writer.write_uint8(&config_data, config1);
     data_writer.write_uint8(&config_data, config2);

@@ -6,6 +6,15 @@
 
 /*
  flv文件编码，此文件描述了一个完整flv文件的编码过程，只要有正确的h264和aac数据，就能够使用此文件函数合成正确的flv文件。
+ flv总体来说是一个简单的视频格式，它包含2部分：header 和 body。
+
+ header是固定格式的数据，表示本文件是一个flv文件。
+ header的长度是9个字节。
+
+ header后面紧跟着body数据。body是由一个一个称为的tag数据组成。
+ tag其实就是一个固定格式的数据块，构造方式同header类似，只是叫法不同而已。
+
+ tag分为3种。script tag，video tag，audio tag。
  */
 
 #ifndef aw_encode_flv_h
@@ -113,6 +122,7 @@ typedef struct aw_flv_script_tag{
     double file_size;
 } aw_flv_script_tag;
 
+//script tag，是flv的第一个tag，用于放一些视频信息的，比如duration，width，height等。script tag对于flv格式的视频文件比较重要，对于rtmp来说，可以不写入script tag。
 extern aw_flv_script_tag *alloc_aw_flv_script_tag();
 extern void free_aw_flv_script_tag(aw_flv_script_tag **);
 
@@ -130,6 +140,7 @@ typedef struct aw_flv_audio_tag{
     aw_data *frame_data;//audio frame data
 } aw_flv_audio_tag;
 
+//audio tag同video tag类似，是acc数据的封装。
 extern aw_flv_audio_tag *alloc_aw_flv_audio_tag();
 extern void free_aw_flv_audio_tag(aw_flv_audio_tag **);
 
@@ -148,6 +159,7 @@ typedef struct aw_flv_video_tag{
     aw_data *frame_data;//video frame data
 } aw_flv_video_tag;
 
+//video tag是视频数据的封装，也就是我们获取的h264数据基础之上，增加一些flv特定的数据。
 extern aw_flv_video_tag *alloc_aw_flv_video_tag();
 extern void free_aw_flv_video_tag(aw_flv_video_tag **);
 

@@ -53,10 +53,11 @@ static void aw_open_faac_enc_handler(aw_faac_context *faac_ctx){
         faac_config->bitRate = faac_ctx->config.bitrate / faac_ctx->config.channel_count;
     }
     
+    //配置好faac
     faacEncSetConfiguration(faac_ctx->faac_handler, faac_config);
     
-    //获取audio specific config，本系列文章中第六篇里面介绍了这个数据，它存储了aac格式的一些关键数据，
-    //在rtmp协议中，必须将此数据在所有音频帧之前发送
+    //获取audio specific config，本系列文章中第六篇里面介绍了这个数据，它存储了aac格式的一些关键数据，在rtmp协议中，必须将此数据在所有音频帧之前发送
+    //主要通过此方法获取AudioSpecificConfig，audio_specific_data就是想要的数据
     uint8_t *audio_specific_data = NULL;
     unsigned long audio_specific_data_len = 0;
     faacEncGetDecoderSpecificInfo(faac_ctx->faac_handler, &audio_specific_data, &audio_specific_data_len);

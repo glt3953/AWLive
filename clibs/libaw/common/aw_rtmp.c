@@ -177,7 +177,7 @@ int aw_rtmp_open(aw_rtmp_context *ctx){
     }
     
     RTMP_EnableWrite(ctx->rtmp);
-    
+    //buffer长度
     RTMP_SetBufferMS(ctx->rtmp, 3 * 1000);
     
     if (!RTMP_Connect(ctx->rtmp, NULL)) {
@@ -192,6 +192,7 @@ int aw_rtmp_open(aw_rtmp_context *ctx){
     aw_set_rtmp_state(ctx, aw_rtmp_state_connected);
     return 1;
 FAILED:
+    //若中间环节出错，断开连接
     aw_rtmp_close(ctx);
     aw_set_rtmp_state(ctx, aw_rtmp_state_error_open);
     return !recode;
@@ -201,6 +202,7 @@ int aw_rtmp_close(aw_rtmp_context *ctx){
     AWLog("aw rtmp closing.......\n");
     if (aw_is_rtmp_opened(ctx)) {
         signal(SIGPIPE, SIG_IGN);
+        //主要这两句
         RTMP_Close(ctx->rtmp);
         RTMP_Free(ctx->rtmp);
         ctx->rtmp = NULL;
@@ -215,6 +217,7 @@ int aw_rtmp_write(aw_rtmp_context *ctx, const char *buf, int size){
         AWLog("[error] aw rtmp writing but rtmp is not open");
         return 0;
     }
+    //RTMP_Write内部有时会排出SIGPIPE信号，在这里处理一下
     signal(SIGPIPE, SIG_IGN);
     int write_ret = RTMP_Write(ctx->rtmp, buf, size);
     if (write_ret <= 0) {

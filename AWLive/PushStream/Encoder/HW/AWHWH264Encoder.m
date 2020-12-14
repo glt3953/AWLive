@@ -117,6 +117,7 @@
     return sps_pps_tag;
 }
 
+//硬编码h264获取sps&pps数据
 static void vtCompressionSessionCallback (void * CM_NULLABLE outputCallbackRefCon,
                                           void * CM_NULLABLE sourceFrameRefCon,
                                           OSStatus status,

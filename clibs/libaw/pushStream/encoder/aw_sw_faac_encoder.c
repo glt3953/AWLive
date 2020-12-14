@@ -154,6 +154,7 @@ extern aw_flv_audio_tag *aw_encoder_create_audio_tag(int8_t *aac_data, long len,
     memcpy(frame_data->data, aac_data, len);
     frame_data->size = (uint32_t)len;
     audio_tag->frame_data = frame_data;
+    //此处计算的data_size长度为 11(tag header size) + body header size(即下面的header_size，表示body中除去aac data的部分) + aac data size
     audio_tag->common_tag.data_size = audio_tag->frame_data->size + 11 + audio_tag->common_tag.header_size;
     return audio_tag;
 }
@@ -163,8 +164,11 @@ extern aw_flv_audio_tag *aw_encoder_create_audio_specific_config_tag(aw_data *au
     //创建 audio specfic config record
     aw_flv_audio_tag *audio_tag = aw_sw_encoder_create_flv_audio_tag(faac_config);
     
+    //AudioSpecificConfig数据，同正常的audio tag在相同位置
     audio_tag->config_record_data = copy_aw_data(audio_specific_config_data);
+    //时间戳0
     audio_tag->common_tag.timestamp = 0;
+    //整个tag长度
     audio_tag->common_tag.data_size = audio_specific_config_data->size + 11 + audio_tag->common_tag.header_size;
     
     return audio_tag;

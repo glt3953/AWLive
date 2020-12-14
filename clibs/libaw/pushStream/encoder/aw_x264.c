@@ -90,10 +90,12 @@ extern aw_data *aw_create_sps_pps_data(uint8_t *sps_bytes, uint32_t sps_len, uin
     return avc_decoder_record;
 }
 
-//编码header，sps pps
+//编码header，sps pps，软编码x264获取sps&pps数据
 static void aw_encode_x264_header(aw_x264_context *aw_ctx){
+    //主要就是libx264中的此方法
     x264_encoder_headers(aw_ctx->x264_handler, &aw_ctx->nal, &aw_ctx->nal_count);
     
+    //将获取到的sps&pps数据取出来，保存到aw_ctx->sps_pps_data中
     //保存sps pps data
     uint8_t *sps_bytes = NULL;
     int8_t sps_len = 0;

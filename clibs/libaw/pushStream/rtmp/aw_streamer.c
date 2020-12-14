@@ -146,13 +146,16 @@ static void aw_streamer_rtmp_state_changed_callback(aw_rtmp_state old_state, aw_
     }
 }
 
+//初始化rtmp连接
 static int8_t aw_steamer_open_rtmp_context(){
+    //创建context 传入rtmpurl及状态回调
     if (!s_rtmp_ctx) {
         s_rtmp_ctx = alloc_aw_rtmp_context(s_rtmp_url, aw_streamer_rtmp_state_changed_callback);
     }
     return aw_rtmp_open(s_rtmp_ctx);
 }
 
+//关闭rtmp连接
 static void aw_streamer_close_rtmp_context(){
     if (s_rtmp_ctx) {
         aw_rtmp_close(s_rtmp_ctx);

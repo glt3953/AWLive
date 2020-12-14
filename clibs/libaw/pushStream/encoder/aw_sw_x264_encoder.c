@@ -132,13 +132,20 @@ extern aw_flv_video_tag *aw_encoder_create_video_tag(int8_t *h264_data, long len
 
 //创建sps_pps_tag
 extern aw_flv_video_tag *aw_encoder_create_sps_pps_tag(aw_data *sps_pps_data){
-    //创建 sps pps
+    //创建普通video tag
     aw_flv_video_tag *sps_pps_tag = aw_sw_encoder_create_flv_video_tag();
+    //关键帧
     sps_pps_tag->frame_type = aw_flv_v_frame_type_key;
+    //package类型，固定的写0即可
     sps_pps_tag->h264_package_type = aw_flv_v_h264_packet_type_seq_header;
+    //cts写0
     sps_pps_tag->h264_composition_time = 0;
+    //sps&pps数据，数据上同真实video tag的h264数据放同一个位置
     sps_pps_tag->config_record_data = copy_aw_data(sps_pps_data);
+    //pts写0
     sps_pps_tag->common_tag.timestamp = 0;
+    //数据总长度
     sps_pps_tag->common_tag.data_size = sps_pps_data->size + 11 + sps_pps_tag->common_tag.header_size;
+    //返回
     return sps_pps_tag;
 }
